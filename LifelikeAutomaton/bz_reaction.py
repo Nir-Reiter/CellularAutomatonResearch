@@ -1,6 +1,7 @@
 import random
 import sys
 import os
+import numpy as np
 from typing import Sequence
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -11,15 +12,23 @@ ALPHA = 1.2
 BETA = 1.0
 GAMMA = 1.0
 
+load = True
+load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
 
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
     def __init__(self):
+        self.start_state = [np.zeros((100, 100)) for _ in range(3)]
         super().__init__(dimension=[100, 100],
                          neighborhood=MooreNeighborhood(EdgeRule.FIRST_AND_LAST_CELL_OF_DIMENSION_ARE_NEIGHBORS))
 
     def init_cell_state(self, cell_coordinate: Sequence) -> Sequence:
-        return [random.random() for _ in range(3)]
+        if load:
+            return [load_state[i][cell_coordinate[0]][cell_coordinate[1]] for i in range(3)]
+        state = [random.random() for _ in range(3)]
+        for i in range(3):
+            self.start_state[i][cell_coordinate] = state[i]
+        return state
 
     def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
         average = last_cell_state[:]
@@ -47,9 +56,3 @@ class BZReaction(CellularAutomaton):
         if current_state[1] >= current_state[0] and current_state[1] >= current_state[2]:
             return [0, 255, 0]
         return [0, 0, 255]
-
-
-if __name__ == "__main__":
-    CAWindow(cellular_automaton=BZReaction(),
-             window_size=(1080, 720),
-             state_to_color_cb=BZReaction.draw_combined).run()

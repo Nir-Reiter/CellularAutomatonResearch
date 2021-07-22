@@ -15,6 +15,11 @@ GAMMA = 1.0
 load = True
 load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
 
+
+def clamp(a, x, b):
+    return max(a, min(x, b))
+
+
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
     def __init__(self):
@@ -31,19 +36,13 @@ class BZReaction(CellularAutomaton):
         return state
 
     def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
-        average = last_cell_state[:]
-        for cell in neighbors_last_states:
-            average[0] += cell[0]
-            average[1] += cell[1]
-            average[2] += cell[2]
-        average = [v/9.0 for v in average]
-
+        average = [sum(x)/9.0 for x in zip(last_cell_state, *neighbors_last_states)]
         new_state = [
             last_cell_state[0] + average[0]*(ALPHA*average[1] - GAMMA*average[2]),
             last_cell_state[1] + average[1]*(BETA*average[2] - ALPHA*average[0]),
             last_cell_state[2] + average[2]*(GAMMA*average[0] - BETA*average[1])
         ]
-        return [max(0, min(v, 1)) for v in new_state]
+        return [clamp(0, v, 1) for v in new_state]
 
     @staticmethod
     def draw_combined(current_state: Sequence) -> Sequence:

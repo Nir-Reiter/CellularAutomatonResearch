@@ -8,12 +8,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from cellular_automaton import CellularAutomaton, MooreNeighborhood, CAWindow, EdgeRule
 
-ALPHA = 1.2
+ALPHA = 1.0
 BETA = 1.0
 GAMMA = 1.0
 
-load = True
-load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
+load = input("Load from saved state? (y/n):") == "y"
+if load:
+    load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
 
 
 def clamp(a, x, b):
@@ -23,19 +24,19 @@ def clamp(a, x, b):
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
     def __init__(self):
-        self.start_state = [np.zeros((100, 100)) for _ in range(3)]
+        if load:
+            self.start_state = np.swapaxes(load_state, 0, 2)
+        else:
+            self.start_state = np.random.rand(100, 100, 3)
         super().__init__(dimension=[100, 100],
                          neighborhood=MooreNeighborhood(EdgeRule.FIRST_AND_LAST_CELL_OF_DIMENSION_ARE_NEIGHBORS))
 
+    # maybe override this to give the array all at once
     def init_cell_state(self, cell_coordinate: Sequence) -> Sequence:
-        if load:
-            return [load_state[i][cell_coordinate[0]][cell_coordinate[1]] for i in range(3)]
-        state = [random.random() for _ in range(3)]
-        for i in range(3):
-            self.start_state[i][cell_coordinate] = state[i]
-        return state
+        return self.start_state[cell_coordinate[0], cell_coordinate[1]]
 
     def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
+        print(last_cell_state)
         average = [sum(x)/9.0 for x in zip(last_cell_state, *neighbors_last_states)]
         new_state = [
             last_cell_state[0] + average[0]*(ALPHA*average[1] - GAMMA*average[2]),

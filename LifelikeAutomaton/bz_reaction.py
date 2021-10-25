@@ -33,17 +33,15 @@ class BZReaction(CellularAutomaton):
 
     # maybe override this to give the array all at once
     def init_cell_state(self, cell_coordinate: Sequence) -> Sequence:
-        return self.start_state[cell_coordinate[0], cell_coordinate[1]]
+        return list(self.start_state[cell_coordinate[0], cell_coordinate[1]])
 
     def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
-        print(last_cell_state)
         average = [sum(x)/9.0 for x in zip(last_cell_state, *neighbors_last_states)]
-        new_state = [
-            last_cell_state[0] + average[0]*(ALPHA*average[1] - GAMMA*average[2]),
-            last_cell_state[1] + average[1]*(BETA*average[2] - ALPHA*average[0]),
-            last_cell_state[2] + average[2]*(GAMMA*average[0] - BETA*average[1])
+        return [
+            clamp(0, last_cell_state[0] + average[0]*(ALPHA*average[1] - GAMMA*average[2]), 1),
+            clamp(0, last_cell_state[1] + average[1]*(BETA*average[2] - ALPHA*average[0]), 1),
+            clamp(0, last_cell_state[2] + average[2]*(GAMMA*average[0] - BETA*average[1]), 1)
         ]
-        return [clamp(0, v, 1) for v in new_state]
 
     @staticmethod
     def draw_combined(current_state: Sequence) -> Sequence:

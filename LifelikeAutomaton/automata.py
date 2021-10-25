@@ -1,6 +1,7 @@
 import time
 import pygame
 import numpy as np
+import scipy.stats
 import scipy.stats as st
 from bz_reaction import BZReaction
 from cellular_automaton import CellularAutomaton, MooreNeighborhood, CAWindow, EdgeRule
@@ -19,11 +20,12 @@ class CustomCAWindow(CAWindow):
             
             time_ca_start = time.time()
             self._cellular_automaton.evolve(evolutions_per_draw)
-            if self._cellular_automaton.evolution_step % 20 == 0:
-                self.calculate_stats()
             time_ca_end = time.time()
             self._redraw_dirty_cells()
             time_ds_end = time.time()
+
+            if self._cellular_automaton.evolution_step % 20 == 0:
+                self.calculate_stats()
             self.print_process_info(evolve_duration=(time_ca_end - time_ca_start),
                                     draw_duration=(time_ds_end - time_ca_end),
                                     evolution_step=self._cellular_automaton.evolution_step)
@@ -39,23 +41,20 @@ class CustomCAWindow(CAWindow):
         total = 0
         count = 0
         for y in range(0, self._cellular_automaton.dimension[1]):
-            for x in range(0, self._cellular_automaton.dimension[0]-2):
-                total += CustomCAWindow.calculate3x3(x, y, cells)
+            for x in range(0, self._cellular_automaton.dimension[0]):
+                total += CustomCAWindow.calculate3x3(x, y, cells, *self._cellular_automaton.dimension)
                 count += 1
 
-        # print(total/count)
-        input()
+        print(total/count)
         # print(cells[0, 0].state)  # this is how you do it
 
     @staticmethod
-    def calculate3x3(x, y, cells):
+    def calculate3x3(x, y, cells, w, h):
         total = []
         for j in range(y, y+3):
             for i in range(x, x+3):
-                total.append(cells[i, j].state)
-        print(total)
-        print(st.entropy(total, axis=0))
-        input()
+                total.append(cells[i % w, j % h].state)
+        # temporary
         return 1
 
 

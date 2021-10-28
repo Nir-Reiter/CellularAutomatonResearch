@@ -1,10 +1,9 @@
 import time
-import pygame
 import numpy as np
-import scipy.stats
+import pygame
 import scipy.stats as st
-from bz_reaction import BZReaction
-from cellular_automaton import CellularAutomaton, MooreNeighborhood, CAWindow, EdgeRule
+from cellular_automaton import CAWindow
+from LifelikeAutomaton.bz_reaction import BZReaction
 
 
 class CustomCAWindow(CAWindow):
@@ -24,7 +23,7 @@ class CustomCAWindow(CAWindow):
             self._redraw_dirty_cells()
             time_ds_end = time.time()
 
-            if self._cellular_automaton.evolution_step % 20 == 0:
+            if self._cellular_automaton.evolution_step % 10 == 0:
                 self.calculate_stats()
             self.print_process_info(evolve_duration=(time_ca_end - time_ca_start),
                                     draw_duration=(time_ds_end - time_ca_end),
@@ -38,24 +37,25 @@ class CustomCAWindow(CAWindow):
 
     def calculate_stats(self):
         cells = self._cellular_automaton.get_cells()
-        total = 0
-        count = 0
-        for y in range(0, self._cellular_automaton.dimension[1]):
-            for x in range(0, self._cellular_automaton.dimension[0]):
-                total += CustomCAWindow.calculate3x3(x, y, cells, *self._cellular_automaton.dimension)
-                count += 1
+        states = [c.state for c in cells.values()]
+        total = []
+        for y in range(0, self._cellular_automaton.dimension[1], 5):
+            for x in range(0, self._cellular_automaton.dimension[0], 5):
+                total.append(self.calculate_region(x, y, 5, cells, *self._cellular_automaton.dimension))
 
-        print(total/count)
+        # comparing average local and global entropy
+        print(np.average(total, axis=0), st.entropy(states, axis=0) / np.log(len(states)))
+
         # print(cells[0, 0].state)  # this is how you do it
 
     @staticmethod
-    def calculate3x3(x, y, cells, w, h):
+    def calculate_region(x, y, size, cells, w, h):
         total = []
-        for j in range(y, y+3):
-            for i in range(x, x+3):
-                total.append(cells[i % w, j % h].state)
-        # temporary
-        return 1
+        for j in range(y, y+size):
+            for i in range(x, x+size):
+                total.append([max(x, 0.00001) for x in cells[i % w, j % h].state])
+
+        return list(st.entropy(total, axis=0) / np.log(size*size))  # now normalized!
 
 
 if __name__ == "__main__":

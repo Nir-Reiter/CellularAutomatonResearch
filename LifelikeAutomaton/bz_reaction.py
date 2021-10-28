@@ -4,17 +4,13 @@ import os
 import numpy as np
 from typing import Sequence
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from cellular_automaton import CellularAutomaton, MooreNeighborhood, CAWindow, EdgeRule
+from cellular_automaton import CellularAutomaton, MooreNeighborhood, EdgeRule
 
 ALPHA = 1.0
 BETA = 1.0
 GAMMA = 1.0
-
-load = input("Load from saved state? (y/n):") == "y"
-if load:
-    load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
 
 
 def clamp(a, x, b):
@@ -24,7 +20,9 @@ def clamp(a, x, b):
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
     def __init__(self):
+        load = input("Load from saved state? (y/n):") == "y"
         if load:
+            load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
             self.start_state = np.swapaxes(load_state, 0, 2)
         else:
             self.start_state = np.random.rand(100, 100, 3)

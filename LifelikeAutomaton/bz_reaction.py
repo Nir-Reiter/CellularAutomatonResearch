@@ -1,6 +1,3 @@
-import random
-import sys
-import os
 import numpy as np
 from typing import Sequence
 
@@ -8,7 +5,7 @@ from typing import Sequence
 
 from cellular_automaton import CellularAutomaton, MooreNeighborhood, EdgeRule
 
-ALPHA = 1.0
+ALPHA = 1.2
 BETA = 1.0
 GAMMA = 1.0
 
@@ -20,7 +17,7 @@ def clamp(a, x, b):
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
     def __init__(self):
-        load = input("Load from saved state? (y/n):") == "y"
+        load = False  # input("Load from saved state? (y/n):") == "y"
         if load:
             load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
             self.start_state = np.swapaxes(load_state, 0, 2)
@@ -34,16 +31,15 @@ class BZReaction(CellularAutomaton):
         return list(self.start_state[cell_coordinate[0], cell_coordinate[1]])
 
     def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
-        average = [sum(x)/9.0 for x in zip(last_cell_state, *neighbors_last_states)]
-        return [
-            clamp(0, last_cell_state[0] + average[0]*(ALPHA*average[1] - GAMMA*average[2]), 1),
-            clamp(0, last_cell_state[1] + average[1]*(BETA*average[2] - ALPHA*average[0]), 1),
-            clamp(0, last_cell_state[2] + average[2]*(GAMMA*average[0] - BETA*average[1]), 1)
-        ]
+        average = [sum(x) / 9.0 for x in zip(last_cell_state, *neighbors_last_states)]
+        new = [clamp(0, last_cell_state[0] + average[0] * (ALPHA * average[1] - GAMMA * average[2]), 1),
+               clamp(0, last_cell_state[1] + average[1] * (BETA * average[2] - ALPHA * average[0]), 1),
+               clamp(0, last_cell_state[2] + average[2] * (GAMMA * average[0] - BETA * average[1]), 1)]
+        return new
 
     @staticmethod
     def draw_combined(current_state: Sequence) -> Sequence:
-        return [255*v for v in current_state]
+        return [255 * v for v in current_state]
 
     @staticmethod
     def draw_highest(current_state: Sequence) -> Sequence:

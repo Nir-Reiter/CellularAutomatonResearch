@@ -1,5 +1,7 @@
 import time
 import numpy as np
+import pandas as pd
+import anndata
 import scipy.stats as st
 import pygame
 import matplotlib.pyplot as plt
@@ -8,10 +10,15 @@ from cellular_automaton import CAWindow
 from LifelikeAutomaton.bz_reaction import *
 
 
+saved_data = pd.DataFrame()
+
+
 class CustomCAWindow(CAWindow):
     STEPS_PER_CALCULATION = 10
+    LOCAL_SCALE = 5
 
     def __init__(self, cellular_automaton: CellularAutomaton, *args, **kwargs):
+        self.coefficients = kwargs.pop("coefficients")
         super().__init__(cellular_automaton, *args, **kwargs)
         self.data = [[], [], [], []]
 
@@ -41,24 +48,24 @@ class CustomCAWindow(CAWindow):
                 self.save_state()
 
             time_ca_start = time.time()
-            self._cellular_automaton.evolve(evolutions_per_draw)
+            for i in range(0, evolutions_per_draw, CustomCAWindow.STEPS_PER_CALCULATION):
+                self._cellular_automaton.evolve(CustomCAWindow.STEPS_PER_CALCULATION)
+                self.calculate_stats(self.LOCAL_SCALE)
             time_ca_end = time.time()
             self._redraw_dirty_cells()
             time_ds_end = time.time()
-
-            # DATA CALCULATIONS
-            if self._cellular_automaton.evolution_step % CustomCAWindow.STEPS_PER_CALCULATION == 0:
-                self.calculate_stats(5)
 
             self.print_process_info(evolve_duration=(time_ca_end - time_ca_start),
                                     draw_duration=(time_ds_end - time_ca_end),
                                     evolution_step=self._cellular_automaton.evolution_step)
             self._sleep_to_keep_rate(time.time() - time_ca_start, evolutions_per_second)
 
+        saved_data['Local Entropy at A:{}, B:{}, C:{}'.format(*self.coefficients)] = self.data[0]
+
     def save_state(self):
         print("Saving state...")
         for i in range(3):
-            np.savetxt("{}.txt".format(i), self._cellular_automaton.start_state[i].tolist())
+            np.savetxt("{}.csv".format(i), self._cellular_automaton.start_state[i].tolist())
 
     def calculate_stats(self, size):
         cells = self._cellular_automaton.get_cells()
@@ -96,7 +103,18 @@ class CustomCAWindow(CAWindow):
 
 
 if __name__ == "__main__":
-    CustomCAWindow(cellular_automaton=BZReaction(),
-                   window_size=(1080, 720),
-                   state_to_color_cb=BZReaction.draw_combined) \
-        .run(evolutions_per_draw=1)
+    coefficients = [
+        [1.2, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [0.8, 1.0, 1.0],
+        [0.8, 1.0, 1.2]
+    ]
+    for i in range(len(coefficients)):
+        CustomCAWindow(cellular_automaton=BZReaction(*coefficients[i]),
+                       window_size=(1080, 720),
+                       state_to_color_cb=BZReaction.draw_combined,
+                       coefficients=coefficients[i]) \
+            .run(evolutions_per_draw=100, last_evolution_step=2000)
+
+    annotated = anndata.AnnData(saved_data)
+    annotated.write("entropy_data.h5ad")

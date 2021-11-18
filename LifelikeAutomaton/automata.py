@@ -14,7 +14,6 @@ saved_data = pd.DataFrame()
 
 
 class CustomCAWindow(CAWindow):
-    STEPS_PER_CALCULATION = 10
     LOCAL_SCALE = 5
 
     def __init__(self, cellular_automaton: CellularAutomaton, *args, **kwargs):
@@ -38,9 +37,11 @@ class CustomCAWindow(CAWindow):
     def run(self,
             evolutions_per_second=0,
             evolutions_per_draw=1,
-            last_evolution_step=0, ):
+            last_evolution_step=0,
+            draws_per_calculation=1):
 
         self.calculate_stats(5)
+        draws = 0
 
         while self._is_not_user_terminated() and self._not_at_the_end(last_evolution_step):
             keys = pygame.key.get_pressed()
@@ -48,9 +49,12 @@ class CustomCAWindow(CAWindow):
                 self.save_state()
 
             time_ca_start = time.time()
-            for i in range(0, evolutions_per_draw, CustomCAWindow.STEPS_PER_CALCULATION):
-                self._cellular_automaton.evolve(CustomCAWindow.STEPS_PER_CALCULATION)
+
+            self._cellular_automaton.evolve(evolutions_per_draw)
+            draws += 1
+            if draws_per_calculation != 0 and draws % draws_per_calculation == 0:
                 self.calculate_stats(self.LOCAL_SCALE)
+
             time_ca_end = time.time()
             self._redraw_dirty_cells()
             time_ds_end = time.time()
@@ -109,12 +113,12 @@ if __name__ == "__main__":
         [0.8, 1.0, 1.0],
         [0.8, 1.0, 1.2]
     ]
-    for i in range(len(coefficients)):
+    for i in range(4):
         CustomCAWindow(cellular_automaton=BZReaction(*coefficients[i]),
                        window_size=(1080, 720),
                        state_to_color_cb=BZReaction.draw_combined,
                        coefficients=coefficients[i]) \
-            .run(evolutions_per_draw=100, last_evolution_step=2000)
+            .run(evolutions_per_draw=100, draws_per_calculation=1, last_evolution_step=2000)
 
     annotated = anndata.AnnData(saved_data)
-    annotated.write("entropy_data.h5ad")
+    annotated.write("entropy_light_data.h5ad")

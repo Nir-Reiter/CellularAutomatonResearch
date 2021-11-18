@@ -16,10 +16,11 @@ class BZReaction(CellularAutomaton):
         load = False  # input("Load from saved state? (y/n):") == "y"
         # LOADING NEEDS TO BE FIXED WITH NEW 4TH LAYER
         if load:
-            load_state = [np.loadtxt("{}.txt".format(i)) for i in range(3)]
-            self.start_state = np.swapaxes(load_state, 0, 2)
+            pass
         else:
-            self.start_state = np.random.rand(100, 100, 3)
+            self.start_state = np.random.rand(100, 100, 4)
+            self.start_state[0:100, 0:100, 3] = 0.75
+            self.start_state[30:70, 30:70, 3] = 1
         super().__init__(dimension=[100, 100],
                          neighborhood=MooreNeighborhood(EdgeRule.FIRST_AND_LAST_CELL_OF_DIMENSION_ARE_NEIGHBORS))
 
@@ -31,12 +32,12 @@ class BZReaction(CellularAutomaton):
     def init_cell_state(self, cell_coordinate: Sequence) -> Sequence:
         return list(self.start_state[cell_coordinate[0], cell_coordinate[1]])
 
-    def evolve_rule(self, last_cell_state, neighbors_last_states: Sequence) -> Sequence:
-        average = [sum(x) / 9.0 for x in zip(last_cell_state, *neighbors_last_states)]
-        new = [clamp(0, last_cell_state[0] + average[0] * (self.ALPHA * average[1] - self.GAMMA * average[2]), 1),
-               clamp(0, last_cell_state[1] + average[1] * (self.BETA * average[2] - self.ALPHA * average[0]), 1),
-               clamp(0, last_cell_state[2] + average[2] * (self.GAMMA * average[0] - self.BETA * average[1]), 1)]
-        return new
+    def evolve_rule(self, state, neighbor_states: Sequence) -> Sequence:
+        average = [sum(x) / 9.0 for x in zip(state, *neighbor_states)]
+        return [clamp(0, state[0] + average[0] * (self.ALPHA * average[1] - self.GAMMA * average[2]) * state[3], 1),
+                clamp(0, state[1] + average[1] * (self.BETA * average[2] - self.ALPHA * average[0]) * state[3], 1),
+                clamp(0, state[2] + average[2] * (self.GAMMA * average[0] - self.BETA * average[1]) * state[3], 1),
+                state[3]]
 
     @staticmethod
     def draw_combined(current_state: Sequence) -> Sequence:
@@ -52,4 +53,4 @@ class BZReaction(CellularAutomaton):
 
     @staticmethod
     def draw_energy(current_state: Sequence) -> Sequence:
-        return [255 * current_state[3]] * 3
+        return [255 * current_state[3], 255 * current_state[3], 0]

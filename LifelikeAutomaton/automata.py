@@ -113,12 +113,12 @@ if __name__ == "__main__":
         [0.8, 1.0, 1.0],
         [0.8, 1.0, 1.2]
     ]
-    for i in range(4):
+    for i in range(1):
         CustomCAWindow(cellular_automaton=BZReaction(*coefficients[i]),
                        window_size=(1080, 720),
                        state_to_color_cb=BZReaction.draw_combined,
                        coefficients=coefficients[i]) \
-            .run(evolutions_per_draw=100, draws_per_calculation=1, last_evolution_step=2000)
+            .run(evolutions_per_draw=1, draws_per_calculation=0, last_evolution_step=2000)
 
     annotated = anndata.AnnData(saved_data)
-    annotated.write("entropy_light_data.h5ad")
+    #annotated.write("entropy_light_data.h5ad")

@@ -12,15 +12,9 @@ def clamp(a, x, b):
 
 # states represented as [a, b, c]
 class BZReaction(CellularAutomaton):
-    def __init__(self, alpha, beta, gamma):
-        load = False  # input("Load from saved state? (y/n):") == "y"
-        # LOADING NEEDS TO BE FIXED WITH NEW 4TH LAYER
-        if load:
-            pass
-        else:
-            self.start_state = np.random.rand(100, 100, 4)
-            self.start_state[0:100, 0:100, 3] = 0.75
-            self.start_state[30:70, 30:70, 3] = 1
+    def __init__(self, alpha, beta, gamma, light_grid):
+        self.start_state = np.random.rand(100, 100, 3)
+        self.start_state = np.insert(self.start_state, 3, light_grid, 2)
         super().__init__(dimension=[100, 100],
                          neighborhood=MooreNeighborhood(EdgeRule.FIRST_AND_LAST_CELL_OF_DIMENSION_ARE_NEIGHBORS))
 
@@ -41,7 +35,7 @@ class BZReaction(CellularAutomaton):
 
     @staticmethod
     def draw_combined(current_state: Sequence) -> Sequence:
-        return [255 * v for v in current_state]
+        return [255 * v * current_state[3] for v in current_state]
 
     @staticmethod
     def draw_highest(current_state: Sequence) -> Sequence:

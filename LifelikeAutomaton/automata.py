@@ -6,8 +6,11 @@ import scipy.stats as st
 import pygame
 import matplotlib.pyplot as plt
 from cellular_automaton import CAWindow
-
 from bz_reaction import *
+from LifelikeAutomaton.bz_reaction import *
+
+
+GRID_SIZE = 100
 
 
 class CustomCAWindow(CAWindow):
@@ -23,13 +26,12 @@ class CustomCAWindow(CAWindow):
             draws_per_save=100, last_evolution_step=0):
 
         self.calculate_stats(self.LOCAL_SCALE)
+        self.save_state()
 
         frequency = draws_per_calculation * evolutions_per_draw
         draws = 0
         while self._is_not_user_terminated() and self._not_at_the_end(last_evolution_step):
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                self.save_state()
 
             time_ca_start = time.time()
             self._cellular_automaton.evolve(evolutions_per_draw)
@@ -47,9 +49,7 @@ class CustomCAWindow(CAWindow):
                 plt.xlim(-10, xx[-1] + 90)
                 plt.pause(0.05)
             if draws % draws_per_save == 0:
-                states = [c.state for c in self._cellular_automaton.get_cells().values()]
-                states = np.delete(np.array(states), 3, 1)
-                self.saved_states.append(states)
+                self.save_state()
 
             self._redraw_dirty_cells()
             time_ds_end = time.time()
@@ -62,9 +62,7 @@ class CustomCAWindow(CAWindow):
         return self.saved_states, self.entropy_data
 
     def save_state(self):
-        print("Saving state...")
-        for i in range(3):
-            np.savetxt("{}.csv".format(i), self._cellular_automaton.start_state[i].tolist())
+        self.saved_states.append([c.state for c in self._cellular_automaton.get_cells().values()])
 
     def calculate_stats(self, size):
         # cells = self._cellular_automaton.get_cells()
@@ -93,25 +91,29 @@ def main():
     draw_rate = 10
     calculation_rate = 10
     save_rate = 100
-    steps = 100
+    steps = 2000
 
-    light_grid = np.full((100, 100), 0.75)
-    light_grid[30:70, 30:70] = 1.0
-    coefficients = [
-        [1.2, 1.0, 1.0],
-        [1.0, 1.0, 1.0]
-    ]
-    saved_states, entropy = CustomCAWindow(
-        cellular_automaton=BZReaction(*coefficients[0], light_grid),
-        window_size=(1080, 720),
-        state_to_color_cb=BZReaction.draw_combined,
-        coefficients=coefficients[0]
-    ).run(evolutions_per_draw=draw_rate, draws_per_calculation=calculation_rate//draw_rate,
-          draws_per_save=save_rate//draw_rate, last_evolution_step=steps)
+    light_grid = np.ones((GRID_SIZE, GRID_SIZE))
+    for i in range(5):
+        light_grid[i*GRID_SIZE//5:(i+1)*GRID_SIZE//5, :] = 1.2 - 0.2*i
 
-    filename = time.asctime().replace(":", "_")
-    np.savez(filename, states=saved_states, entropy=entropy, xvalues=np.array(range(0, steps+1, calculation_rate)),
-             state_steps=np.array(range(0, steps+1, save_rate)))
+    coefficients = [1.0, 1.0, 1.0]
+
+    c = CustomCAWindow(cellular_automaton=BZReaction(GRID_SIZE, *coefficients, light_grid),
+                       window_size=(1080, 720),
+                       state_to_color_cb=BZReaction.draw_combined,
+                       coefficients=coefficients)
+    saved_states, entropy = c.run(evolutions_per_draw=draw_rate,
+                                  draws_per_calculation=calculation_rate // draw_rate,
+                                  draws_per_save=save_rate // draw_rate,
+                                  last_evolution_step=steps)
+
+    filename = time.asctime().replace(":", "_") + " with light"
+    np.savez(filename,
+             states=saved_states,
+             entropy=entropy,
+             xvalues=np.array(range(0, steps + 1, calculation_rate)),
+             state_steps=np.array(range(0, steps + 1, save_rate)))
 
 
 if __name__ == "__main__":

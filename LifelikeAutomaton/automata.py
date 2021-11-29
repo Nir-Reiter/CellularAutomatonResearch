@@ -11,6 +11,7 @@ from LifelikeAutomaton.bz_reaction import *
 
 
 GRID_SIZE = 100
+LIGHT_LAYERS = 5
 
 
 class CustomCAWindow(CAWindow):
@@ -25,7 +26,7 @@ class CustomCAWindow(CAWindow):
     def run(self, evolutions_per_second=0, evolutions_per_draw=1, draws_per_calculation=1,
             draws_per_save=100, last_evolution_step=0):
 
-        self.calculate_stats(self.LOCAL_SCALE)
+        self.calculate_stats(self.LOCAL_SCALE, LIGHT_LAYERS)
         self.save_state()
 
         frequency = draws_per_calculation * evolutions_per_draw
@@ -38,15 +39,17 @@ class CustomCAWindow(CAWindow):
             time_ca_end = time.time()
             draws += 1
             if draws % draws_per_calculation == 0:
-                self.calculate_stats(self.LOCAL_SCALE)
+                self.calculate_stats(self.LOCAL_SCALE, LIGHT_LAYERS)
 
                 current_step = self._cellular_automaton.get_evolution_step()
                 xx = list(range(0, current_step + 1, frequency))
                 plt.clf()  # clear figure
-                plt.plot(xx, self.entropy_data, label="Average Local Entropy")
+                plt.plot(xx, self.entropy_data, label=["1.2", "1.0", "0.8", "0.6", "0.4"])
                 plt.title(f"Entropy at A={self.coefficients[0]} B={self.coefficients[1]} C={self.coefficients[2]}")
                 plt.ylim(0.5, 1.0)
                 plt.xlim(-10, xx[-1] + 90)
+                plt.legend()
+                plt.show(block=False)
                 plt.pause(0.05)
             if draws % draws_per_save == 0:
                 self.save_state()
@@ -64,16 +67,19 @@ class CustomCAWindow(CAWindow):
     def save_state(self):
         self.saved_states.append([c.state for c in self._cellular_automaton.get_cells().values()])
 
-    def calculate_stats(self, size):
+    def calculate_stats(self, size, divisions):
         # cells = self._cellular_automaton.get_cells()
         # states = [c.state for c in cells.values()]
-        entropy = []
-        for y in range(0, self._cellular_automaton.dimension[1], size):
-            for x in range(0, self._cellular_automaton.dimension[0], size):
-                data = self.get_region_data(x, y, 5)
-                entropy.append(list(st.entropy(data, axis=0) / np.log(size * size)))
+        h = self._cellular_automaton.dimension[1] // divisions
+        entropy = list()
+        for i in range(5):
+            entropy.append(list())
+            for y in range(i * h, (i+1) * h, size):
+                for x in range(0, self._cellular_automaton.dimension[0], size):
+                    data = self.get_region_data(y, x, 5)
+                    entropy[i].append(list(st.entropy(data, axis=0) / np.log(size * size)))
 
-        result = np.average(entropy, axis=(0, 1))
+        result = np.average(entropy, axis=(1, 2))
         self.entropy_data.append(result)
 
         # print(cells[0, 0].state)  # this is how you do it
@@ -93,13 +99,13 @@ def main():
     save_rate = 100
     steps = 2000
 
-    light_grid = np.ones((GRID_SIZE, GRID_SIZE))
-    for i in range(5):
-        light_grid[i*GRID_SIZE//5:(i+1)*GRID_SIZE//5, :] = 1.2 - 0.2*i
+    light_grids = [np.ones((GRID_SIZE, GRID_SIZE)) for _ in range(2)]
+    for i in range(LIGHT_LAYERS):
+        light_grids[0][i*GRID_SIZE//5:(i+1)*GRID_SIZE//5, :] = 1.2 - i/LIGHT_LAYERS
 
     coefficients = [1.0, 1.0, 1.0]
 
-    c = CustomCAWindow(cellular_automaton=BZReaction(GRID_SIZE, *coefficients, light_grid),
+    c = CustomCAWindow(cellular_automaton=BZReaction(GRID_SIZE, *coefficients, light_grids[1]),
                        window_size=(1080, 720),
                        state_to_color_cb=BZReaction.draw_combined,
                        coefficients=coefficients)
@@ -108,7 +114,7 @@ def main():
                                   draws_per_save=save_rate // draw_rate,
                                   last_evolution_step=steps)
 
-    filename = time.asctime().replace(":", "_") + " with light"
+    filename = time.asctime().replace(":", "_")
     np.savez(filename,
              states=saved_states,
              entropy=entropy,

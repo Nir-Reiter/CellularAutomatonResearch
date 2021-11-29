@@ -49,20 +49,17 @@ class SnapshotWindow(pyglet.window.Window):
 
 
 def main():
-    data = np.load("data.npz")
-    plt.plot(data["xvalues"], data["entropy"], label="No Light")
-    data_light = np.load("data_light.npz")
-    plt.plot(data_light["xvalues"], data_light["entropy"], label="Light Rectangle")
-    data_light_gradient = np.load("data_light_gradient.npz")
-    plt.plot(data_light_gradient["xvalues"], data_light_gradient["entropy"], label="Light Gradient")
+    files = ["newdata.npz", "data.npz"]
+    labels = [[1.2, 1.0, 0.8, 0.6, 0.4], "No Light"]
+    data = [np.load(f) for f in files]
+    windows = []
+    for i in range(len(data)):
+        plt.plot(data[i]["xvalues"], data[i]["entropy"], label=labels[i])
+        windows.append(SnapshotWindow(np.reshape(data[i]["states"], (-1, 100, 100, 4)), data[i]["state_steps"]))
     plt.title("Average Local Entropy")
     plt.legend()
     plt.ylim(0.5, 1.0)
     plt.show(block=False)
-
-    window = SnapshotWindow(np.reshape(data["states"], (-1, 100, 100, 4)), data["state_steps"])
-    window_light = SnapshotWindow(np.reshape(data_light["states"], (-1, 100, 100, 4)), data["state_steps"])
-    window_light_grad = SnapshotWindow(np.reshape(data_light_gradient["states"], (-1, 100, 100, 4)), data["state_steps"])
     pyglet.app.run()
 
 

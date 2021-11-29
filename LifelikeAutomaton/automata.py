@@ -9,7 +9,6 @@ from cellular_automaton import CAWindow
 from bz_reaction import *
 from LifelikeAutomaton.bz_reaction import *
 
-
 GRID_SIZE = 100
 LIGHT_LAYERS = 5
 
@@ -70,16 +69,24 @@ class CustomCAWindow(CAWindow):
     def calculate_stats(self, size, divisions):
         # cells = self._cellular_automaton.get_cells()
         # states = [c.state for c in cells.values()]
-        h = self._cellular_automaton.dimension[1] // divisions
-        entropy = list()
-        for i in range(5):
-            entropy.append(list())
-            for y in range(i * h, (i+1) * h, size):
-                for x in range(0, self._cellular_automaton.dimension[0], size):
-                    data = self.get_region_data(y, x, 5)
-                    entropy[i].append(list(st.entropy(data, axis=0) / np.log(size * size)))
 
-        result = np.average(entropy, axis=(1, 2))
+        # h = self._cellular_automaton.dimension[1] // divisions
+        # entropy = list()
+        # for i in range(5):
+        #     entropy.append(list())
+        #     for y in range(i * h, (i+1) * h, size):
+        #         for x in range(0, self._cellular_automaton.dimension[0], size):
+        #             data = self.get_region_data(y, x, 5)
+        #             entropy[i].append(list(st.entropy(data, axis=0) / np.log(size * size)))
+        # result = np.average(entropy, axis=(0, 1))
+
+        entropy = list()
+        for y in range(0, self._cellular_automaton.dimension[1], size):
+            for x in range(0, self._cellular_automaton.dimension[0], size):
+                data = self.get_region_data(y, x, 5)
+                entropy.append(list(st.entropy(data, axis=0) / np.log(size * size)))
+        result = np.average(entropy, axis=(0, 1))
+
         self.entropy_data.append(result)
 
         # print(cells[0, 0].state)  # this is how you do it
@@ -101,7 +108,7 @@ def main():
 
     light_grids = [np.ones((GRID_SIZE, GRID_SIZE)) for _ in range(2)]
     for i in range(LIGHT_LAYERS):
-        light_grids[0][i*GRID_SIZE//5:(i+1)*GRID_SIZE//5, :] = 1.2 - i/LIGHT_LAYERS
+        light_grids[0][i * GRID_SIZE // 5:(i + 1) * GRID_SIZE // 5, :] = 1.2 - i / LIGHT_LAYERS
 
     coefficients = [1.0, 1.0, 1.0]
 

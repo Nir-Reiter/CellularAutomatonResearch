@@ -13,7 +13,7 @@ def get_color(state):
 
 
 class SnapshotWindow(pyglet.window.Window):
-    def __init__(self, data, generations):
+    def __init__(self, name, data, generations):
         super().__init__(width=500, height=500)
         self.data = data
         self.generations = generations
@@ -21,6 +21,7 @@ class SnapshotWindow(pyglet.window.Window):
         self.labels = []
         self.images = []
         self.current_image = 0
+        self.name = pyglet.text.Label(name, x=10, y=460)
 
         for i in range(len(self.data)):
             self.images.append([])
@@ -40,6 +41,7 @@ class SnapshotWindow(pyglet.window.Window):
         self.clear()
         self.batches[self.current_image].draw()
         self.labels[self.current_image].draw()
+        self.name.draw()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.RIGHT:
@@ -50,12 +52,13 @@ class SnapshotWindow(pyglet.window.Window):
 
 def main():
     files = ["newdata.npz", "data.npz"]
-    labels = [[1.2, 1.0, 0.8, 0.6, 0.4], "No Light"]
+    labels = [[1.2, 1.0, 0.8, 0.6, 0.4], "Full Light"]
     data = [np.load(f) for f in files]
     windows = []
     for i in range(len(data)):
         plt.plot(data[i]["xvalues"], data[i]["entropy"], label=labels[i])
-        windows.append(SnapshotWindow(np.reshape(data[i]["states"], (-1, 100, 100, 4)), data[i]["state_steps"]))
+        windows.append(SnapshotWindow(files[i], np.reshape(data[i]["states"], (-1, 100, 100, 4)),
+                                      data[i]["state_steps"]))
     plt.title("Average Local Entropy")
     plt.legend()
     plt.ylim(0.5, 1.0)

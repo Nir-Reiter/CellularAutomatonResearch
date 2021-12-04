@@ -5,7 +5,7 @@ import numpy as np
 import pyglet
 from pyglet import shapes
 from bz_reaction import BZReaction
-from LifelikeAutomaton.bz_reaction import BZReaction
+# from LifelikeAutomaton.bz_reaction import BZReaction
 
 
 def get_color(state):
@@ -51,18 +51,18 @@ class SnapshotWindow(pyglet.window.Window):
 
 
 def main():
-    files = ["newdata.npz", "data.npz"]
-    labels = [[1.2, 1.0, 0.8, 0.6, 0.4], "Full Light"]
+    files = ["1.2.npz", "1.0.npz", "0.8.npz", "0.6.npz", "0.4.npz", "gradient.npz"]
+    labels = ["1.2 full", "1.0 full", "0.8 full", "0.6 full", "0.4 full", [1.2, 1.0, 0.8, 0.6, 0.4]]
     data = [np.load(f) for f in files]
     windows = []
-    for i in range(len(data)):
-        plt.plot(data[i]["xvalues"], data[i]["entropy"], label=labels[i])
-        windows.append(SnapshotWindow(files[i], np.reshape(data[i]["states"], (-1, 100, 100, 4)),
-                                      data[i]["state_steps"]))
-    plt.title("Average Local Entropy")
-    plt.legend()
-    plt.ylim(0.5, 1.0)
-    plt.show(block=False)
+    fig, axs = plt.subplots(1, 1)
+    for i, d in enumerate(data):
+        axs.plot(d["xvalues"], d["entropy"], label=labels[i])
+        # windows.append(SnapshotWindow(files[i], np.reshape(d["states"], (-1, 100, 100, 4)), d["state_steps"]))
+    axs.set_title("Average Local Entropy")
+    axs.legend()
+    axs.set_ylim(0.5, 1.0)
+    plt.show()
     pyglet.app.run()
 
 
